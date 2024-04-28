@@ -45,3 +45,22 @@ stores_df_pandas = pd.DataFrame(stores_data)
 
 # Convert to Spark DataFrame
 stores_df_spark = spark.createDataFrame(stores_df_pandas)
+
+# Create temporary views for Spark DataFrames
+reviews_df_spark.createOrReplaceTempView("instacart_reviews")
+stores_df_spark.createOrReplaceTempView("instacart_stores")
+
+query = """with CTE as (
+            select s.name,r.score,case when r.score>5 then 'positive' else 'negative' end as review from instacart_stores s join instacart_reviews r on s.id = r.store_id 
+            where date_part('month',s.opening_date)>=6 and date_part('year',s.opening_date)=2021
+) , CTE2 as(
+select name,sum(case when review = 'positive' then 1 else 0 end) as pos_count,
+sum(case when review = 'negative' then 1 else 0 end) as neg_count,count(1) as group_count from CTE
+group by name)
+select name,round((pos_count*100/group_count),2) as pos_ratio,round((neg_count*100/group_count),2) as neg_ratio from CTE2
+where round((neg_count*100/group_count),2) >20
+"""
+result = spark.sql(query)
+print("Records in result:")
+result.show(result.count())
+print("Values in result:",result.count())
