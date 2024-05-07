@@ -2,6 +2,8 @@ import pandas as pd
 import random
 from datetime import datetime, timedelta
 from pyspark.sql import SparkSession
+from pyspark.sql import Window as W
+from pyspark.sql import functions as F
 # Function to generate random match results
 def generate_match_result():
     return random.choice(['Win', 'Loss'])
@@ -59,3 +61,11 @@ result.show()
 print(result.count())
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Using Spark Dataframe
+df1 = player_df.withColumn("rn",F.row_number().over(W.partitionBy(F.col('player_id')).orderBy('match_date')))
+df2 = df1.filter(F.col("match_result")=='Win')
+df3 =df2.withColumn("rn_diff",F.col('rn')-F.row_number().over(W.partitionBy(F.col('player_id')).orderBy('match_date')))
+
+df4 = df3.groupBy(F.col('player_id'),F.col('rn_diff')).agg(F.count('match_date').alias('win_streaks'))
+df5=df4.filter(F.col('win_streaks')==df4.select(F.max('win_streaks')).collect()[0][0])\
+    .select(F.col('player_id'),F.col('win_streaks'))
+df5.show()
