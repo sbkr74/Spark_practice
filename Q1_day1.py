@@ -2,7 +2,7 @@ import pandas as pd
 from pyspark.sql import SparkSession
 from datetime import datetime, timedelta
 import random
-import pyspark.sql.function as F
+import pyspark.sql.functions as F
 
 # Create SparkSession
 spark = SparkSession.builder \
