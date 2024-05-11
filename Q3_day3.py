@@ -35,14 +35,21 @@ spark_df = spark.createDataFrame(pandas_df)
 # spark_df.show(spark_df.count())
 
 spark_df.createOrReplaceTempView("revenue")
-df = spark.sql("select *, date_part('month',created_at) as month from revenue order by created_at,month")
-df.show(df.count())
+query = """WITH 
+CTE AS (
+    SELECT *, date_format(created_at, 'yyyy-MM') AS year_month 
+    FROM revenue
+),
+CTE2 AS (
+    SELECT sum(value) AS total, year_month,date_part('month',year_month) as month
+    FROM CTE 
+    GROUP BY year_month 
+    ORDER BY year_month
+)
+SELECT t1.*,round((((t1.total-t2.total)/t2.total)*100),2) as diff_count 
+FROM CTE2 t1 LEFT JOIN CTE2 t2 on t1.month = t2.month+1 
+ORDER BY year_month
+"""
+df = spark.sql(query)
+df.show()
 print(df.count())
-
-df1 = spark.sql("select sum(value) as total, date_part('month',created_at) as month from revenue group by month order by month")
-df1.show(df1.count())
-print(df1.count())
-
-df1.createOrReplaceTempView("monthly_revenue")
-df2 = spark.sql("select t1.*,round((((t1.total-t2.total)/t2.total)*100),2) as diff_per from monthly_revenue t1 left join monthly_revenue t2 on t1.month=t2.month+1 order by month")
-df2.show()
