@@ -1,6 +1,12 @@
 import pandas as  pd
 import random
 from datetime import datetime, timedelta
+from pyspark.sql import SparkSession
+from pyspark.sql import Window
+from pyspark.sql.functions import col, date_format, sum, lag, round
+
+# Creating spark sesseion
+spark = SparkSession.builder.appName("day3").getOrCreate()
 
 # Function to generate sample data based on the provided schema
 def generate_data(num_records):
@@ -28,12 +34,12 @@ pandas_df = pd.DataFrame(sample_data)
 ####################################################################################################################
 ####################################################################################################################
 # Spark SQL approach
-from pyspark.sql import SparkSession
-
+# pandas dataframe to spark dataframe
+# Creating spark sesseion
 spark = SparkSession.builder.appName("day3").getOrCreate()
 spark_df = spark.createDataFrame(pandas_df)
-# spark_df.show(spark_df.count())
 
+# creating Temporary View to work with SPARK_SQL
 spark_df.createOrReplaceTempView("revenue")
 query = """WITH 
 CTE AS (
@@ -52,4 +58,18 @@ ORDER BY year_month
 """
 df = spark.sql(query)
 df.show()
-print(df.count())
+# =================================================================================================================
+# Spark Dataframe Approach
+
+# Suppress the warning message
+spark.sparkContext.setLogLevel("ERROR")
+
+sp_df = spark_df.withColumn('year_month',date_format('created_at','yyyy-MM'))\
+        .groupBy('year_month')\
+        .agg(sum('value').alias('month_revenue'))\
+        .withColumn('last_month_revenue',lag(col('month_revenue'))\
+        .over(Window.orderBy('year_month')))\
+        .withColumn('revenue_diff',round((col('month_revenue')-col('last_month_revenue'))*100/col('last_month_revenue'),2))\
+        .select(col('year_month'),col('revenue_diff'))
+sp_df.show()
+spark.stop()
