@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-
+from pyspark.sql.functions import col , count ,when, sum
 # Creating Spark Session
 spark = SparkSession.builder.appName('day4').getOrCreate()
 
@@ -22,3 +22,16 @@ FROM employees
 sql_df = spark.sql(query)
 sql_df.show()
 
+# Create a DataFrame to hold the count of NULL values for each column
+null_counts = emp_df.select(
+    sum(col("emp_id").isNull().cast("int")).alias("count_emp_id_null"),\
+    sum(col("name").isNull().cast("int")).alias("count_name_null"),\
+    sum(col("age").isNull().cast("int")).alias("count_age_null")\
+)
+
+null_counts.show()
+
+sp_df = emp_df.select([count(when(col(i).isNull(),1)).alias(i) for i in emp_df.columns])
+sp_df.show()
+
+spark.stop()
