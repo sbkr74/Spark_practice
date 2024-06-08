@@ -7,14 +7,30 @@
  5. % Marks Less than or equal to 39 then 'Fail'
 
 Input:
-student = [(1,'Steve'),(2,'David'),(3,'Aryan')]
-student_schema = "student_id int , student_name string"
 
-marks = [(1,'pyspark',90),
- (1,'sql',100),
- (2,'sql',70),
- (2,'pyspark',60),
- (3,'sql',30),
- (3,'pyspark',20)
- ]
-marks_schema = "student_id int , subject_name string , marks int"
+**student** = [(1,'Steve'),(2,'David'),(3,'Aryan')]  
+**student_schema** = "student_id int , student_name string"
+```
++----------+------------+
+|student_id|student_name|
++----------+------------+
+|         1|       Steve|
+|         2|       David|
+|         3|       Aryan|
++----------+------------+
+```
+
+**marks** = [(1,'pyspark',90),(1,'sql',100),(2,'sql',70),(2,'pyspark',60),(3,'sql',30),(3,'pyspark',20)]  
+**marks_schema** = "student_id int , subject_name string , marks int"
+```
++----------+------------+-----+
+|student_id|subject_name|marks|
++----------+------------+-----+
+|         1|     pyspark|   90|
+|         1|         sql|  100|
+|         2|         sql|   70|
+|         2|     pyspark|   60|
+|         3|         sql|   30|
+|         3|     pyspark|   20|
++----------+------------+-----+
+```
