@@ -40,7 +40,7 @@ sql_df.show()
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 # Spark DataFrame approach
 joined_df = student_df.join(marks_df,student_df.student_id==marks_df.student_id,"inner")
-grade_df = joined_df.withColumn('grade',F.when(F.col('marks')>70,"Distinction")
+grade_df = joined_df.withColumn('grade',F.when(F.col('marks')>=70,"Distinction")
                                 .when((F.col('marks')<=69)&(F.col('marks')>=60),"First class")
                                 .when((F.col('marks')<=59)&(F.col('marks')>=50),"Second class")
                                 .when((F.col('marks')<=49)&(F.col('marks')>=40),"Third class")
