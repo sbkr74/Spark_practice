@@ -1,4 +1,5 @@
 from pyspark.sql import SparkSession
+import pyspark.sql.functions as F
 
 spark = SparkSession.builder.appName('day5').getOrCreate()
 
@@ -20,7 +21,11 @@ student_df.createOrReplaceTempView('students')
 marks_df.createOrReplaceTempView('marks')
 
 
-# 1. % Marks greater than or equal to 70 then 'Distinction'
+#  1. % Marks greater than or equal to 70 then 'Distinction'
+#  2. % Marks range between 60-69 then 'First Class'
+#  3. % Marks range between 50-59 then 'Second Class'
+#  4. % Marks range between 40-49 then 'Third Class'
+#  5. % Marks Less than or equal to 39 then 'Fail'
 query = ''' select s.student_id,student_name,marks,
 (case when marks>= 70 then 'Distinction'
     when marks<=69 and marks>=60 then 'First class'
@@ -33,3 +38,11 @@ on s.student_id = m.student_id
 sql_df = spark.sql(query)
 sql_df.show()
 # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+# Spark DataFrame approach
+joined_df = student_df.join(marks_df,student_df.student_id==marks_df.student_id,"inner")
+grade_df = joined_df.withColumn('grade',F.when(F.col('marks')>70,"Distinction")
+                                .when((F.col('marks')<=69)&(F.col('marks')>=60),"First class")
+                                .when((F.col('marks')<=59)&(F.col('marks')>=50),"Second class")
+                                .when((F.col('marks')<=49)&(F.col('marks')>=40),"Third class")
+                                .otherwise("Fail"))
+grade_df.show()
