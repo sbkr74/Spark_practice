@@ -14,7 +14,7 @@
 ```
 **INPUT:**  
 **data2** = [(4, "Raj" , "CSE" , "HP") ,(5 , "Kunal" , "Mech" , "Rajasthan")]  
-**data2_scehma** = ("ID" , "Student_Name" , "Department_name" , "City")
+**data2_scehma** = ("ID" , "Student_Name" , "Department_Name" , "City")
 
 ```
 +---+------------+---------------+----------+
