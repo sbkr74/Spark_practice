@@ -13,3 +13,10 @@ _schema = "cust_id int, flight_id string , origin string , destination string"
 spark_df = spark.createDataFrame(data=flights_data,schema=_schema)
 spark_df.show()
 
+###################################################################
+# pandas dataframe
+import pandas as pd
+sch = tuple(_schema.split(','))
+print(sch)
+pandas_df = pd.DataFrame(data=flights_data,columns=sch)
+print(pandas_df)
