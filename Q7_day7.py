@@ -1,4 +1,6 @@
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+from pyspark.sql.window import Window
 
 spark = SparkSession.builder.appName('Day_7').getOrCreate()
 
@@ -11,8 +13,14 @@ flights_data = [(1,'Flight1' , 'Delhi' , 'Hyderabad'),
 _schema = "cust_id int, flight_id string , origin string , destination string"
 
 spark_df = spark.createDataFrame(data=flights_data,schema=_schema)
-spark_df.show()
-###################################################################
+####################################################################################
+# Spark DataFrame Approach
+spark_df1 = spark_df.withColumn('order',row_number().over(Window.partitionBy(col('cust_id')).orderBy(col('flight_id'))))
+spark_df2 = spark_df1.groupBy(col('cust_id')).agg(min(col('order')).alias('start'),max(col('order')).alias('end'))
+spark_df3 = spark_df1.join(spark_df2,on = (spark_df1.cust_id == spark_df2.cust_id)).drop(spark_df2.cust_id)
+spark_final_df = spark_df3.groupBy(col('cust_id')).agg(min(when(col('order') == col('start'),col('origin'))).alias('Origin'),max(when(col('order') == col('end'),col('destination'))).alias('Destination'))
+spark_final_df.show()
+####################################################################################
 # SQL apprach
 # created Temporary View ('flight')
 spark_df.createOrReplaceTempView('flight')
@@ -46,13 +54,13 @@ cols = "cust_id,flight_id,origin,destination"
 import pandas as pd
 sch = tuple(cols.split(','))
 pandas_df = pd.DataFrame(data=flights_data,columns=sch)
-print(pandas_df)
-print()
+
 # pandas_df['num'] = pandas_df['cust_id'].rank(method='min')
 pandas_df['rn'] = pandas_df.groupby('cust_id').cumcount() +1
-print(pandas_df)
-
+print()
 print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+print()
+
 # Group by cust_id
 grouped = pandas_df.groupby('cust_id')
 
