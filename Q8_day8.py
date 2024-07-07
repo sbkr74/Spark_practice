@@ -27,3 +27,10 @@ data = [
 spark = SparkSession.builder.appName('Day_8').getOrCreate()
 df = spark.createDataFrame(data,schema)
 df.show()
+
+#######################################################################################
+# SQL approach
+df.createOrReplaceTempView('employees')
+query1 = 'SELECT DISTINCT(*) FROM employees'
+sql_df = spark.sql(query1)
+sql_df.show()
