@@ -1,5 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
+from pyspark.sql.functions import *
 schema = StructType([
  StructField("emp_id", IntegerType(), True),
  StructField("emp_name", StringType(), True),
@@ -36,3 +37,7 @@ sql_df = spark.sql(query1)
 sql_df.show()
 
 #######################################################################################
+# Spark DataFrame Approach
+# finding duplicate values
+spark_df = df.groupBy(df.columns).count().filter("count>1").drop(col("count"))
+spark_df.show()
