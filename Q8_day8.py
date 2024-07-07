@@ -30,7 +30,14 @@ df.show()
 
 #######################################################################################
 # SQL approach
+# finding unique values
 df.createOrReplaceTempView('employees')
 query1 = 'SELECT DISTINCT(*) FROM employees'
 sql_df = spark.sql(query1)
 sql_df.show()
+
+#######################################################################################
+# Spark DataFrame Approach
+# finding unique values
+spark_df = df.dropDuplicates()
+spark_df.show()
