@@ -26,18 +26,13 @@ data = [
 
 spark = SparkSession.builder.appName('Day_8').getOrCreate()
 df = spark.createDataFrame(data,schema)
-df.show()
 
 #######################################################################################
 # SQL approach
-# finding unique values
+# finding duplicate values
 df.createOrReplaceTempView('employees')
-query1 = 'SELECT DISTINCT(*) FROM employees'
+query1 = 'SELECT emp_id,emp_name,emp_gender,emp_age,emp_salary,emp_manager FROM employees group by emp_id,emp_name,emp_gender,emp_age,emp_salary,emp_manager having count(*)>1 '
 sql_df = spark.sql(query1)
 sql_df.show()
 
 #######################################################################################
-# Spark DataFrame Approach
-# finding unique values
-spark_df = df.dropDuplicates()
-spark_df.show()
