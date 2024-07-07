@@ -41,3 +41,11 @@ sql_df.show()
 # finding duplicate values
 spark_df = df.groupBy(df.columns).count().filter("count>1").drop(col("count"))
 spark_df.show()
+
+#######################################################################################
+# Pandas DataFrame Approach
+import pandas as pd
+_schema = ("emp_id","emp_name","emp_gender","emp_age","emp_salary","emp_manager")
+pd_df = pd.DataFrame(data=data,columns=_schema)
+pd_df1 = pd_df[pd_df.duplicated()]
+print(pd_df1)
