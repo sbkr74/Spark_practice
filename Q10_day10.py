@@ -15,3 +15,14 @@ sampleData=[(1,"Van dijk",23),
 
 df = spark.createDataFrame(sampleData).toDF("id","name","age")
 df.show()
+
+###################################################################
+# SQL Approach
+df.createOrReplaceTempView('data')
+query = """SELECT 
+  (SELECT COUNT(*) FROM data WHERE id = 'NULL') AS id,
+  (SELECT COUNT(*) FROM data WHERE name = 'NULL') AS name,
+  (SELECT COUNT(*) FROM data WHERE age = 'NULL') AS age;
+"""
+sql_df = spark.sql(query)
+sql_df.show()
