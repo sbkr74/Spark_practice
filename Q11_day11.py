@@ -1,0 +1,23 @@
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+
+spark = SparkSession.builder.appName('Day_11')\
+        .config("spark.eventLog.gcMetrics.youngGenerationGarbageCollectors","G1 Young Generation, G1 Concurrent GC")\
+        .config("spark.eventLog.gcMetrics.oldGenerationGarbageCollectors","G1 Old Generation, G1 Concurrent GC")\
+        .getOrCreate()
+
+# Define the schema for the DataFrame
+schema1=StructType([
+ StructField("ID", IntegerType()),
+ StructField("Name", StringType()),
+ StructField("PhoneNo", StringType())
+])
+
+# Data to be inserted into the DataFrame
+sampleData1=[(1,"Martinez","U795342iy"),
+ (2,"Rodri","7903280317"),
+ (3,"Mane","sh987122e9"),]
+
+df = spark.createDataFrame(sampleData1,schema1)
+df.show()
