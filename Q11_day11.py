@@ -31,5 +31,5 @@ sql_df.show()
 
 ################################################
 # Spark DataFrame approach
-spark_df = df.filter(col('PhoneNo').rlike('^[0-9]+$'))
+spark_df = df.filter(col('PhoneNo').rlike('^[0-9]{10}$'))
 spark_df.show()
