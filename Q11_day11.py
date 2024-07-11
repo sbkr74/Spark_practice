@@ -25,7 +25,8 @@ df = spark.createDataFrame(sampleData1,schema1)
 ################################################
 # Spark SQL approach
 df.createOrReplaceTempView('records')
-query = "SELECT * FROM records WHERE LEN(PhoneNo) = 10 and PhoneNo REGEXP '^[0-9]+$' "
+# query = "SELECT * FROM records WHERE LEN(PhoneNo) = 10 and PhoneNo REGEXP '^[0-9]+$' "
+query = "select * from records where PhoneNo rlike '^[0-9]{10}$'"
 sql_df = spark.sql(query)
 sql_df.show()
 
