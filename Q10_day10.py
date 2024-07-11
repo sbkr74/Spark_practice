@@ -17,19 +17,25 @@ df = spark.createDataFrame(sampleData).toDF("id","name","age")
 df.show()
 
 ###################################################################
-# SQL Approach
-df.createOrReplaceTempView('data')
-# query = """SELECT 
-#   (SELECT COUNT(*) FROM data WHERE id = 'NULL') AS id,
-#   (SELECT COUNT(*) FROM data WHERE name = 'NULL') AS name,
-#   (SELECT COUNT(*) FROM data WHERE age = 'NULL') AS age;
+# # SQL Approach
+# df.createOrReplaceTempView('data')
+# # query = """SELECT 
+# #   (SELECT COUNT(*) FROM data WHERE id = 'NULL') AS id,
+# #   (SELECT COUNT(*) FROM data WHERE name = 'NULL') AS name,
+# #   (SELECT COUNT(*) FROM data WHERE age = 'NULL') AS age;
+# # """
+# another_query = """
+# SELECT 
+#   COUNT(CASE WHEN id = 'NULL' THEN 1 END) AS id,
+#   COUNT(CASE WHEN name = 'NULL' THEN 1 END) AS name,
+#   COUNT(CASE WHEN age = 'NULL' THEN 1 END) AS age
+# FROM data;
 # """
-another_query = """
-SELECT 
-  COUNT(CASE WHEN id = 'NULL' THEN 1 END) AS id,
-  COUNT(CASE WHEN name = 'NULL' THEN 1 END) AS name,
-  COUNT(CASE WHEN age = 'NULL' THEN 1 END) AS age
-FROM data;
-"""
-sql_df = spark.sql(another_query)
-sql_df.show()
+# sql_df = spark.sql(another_query)
+# sql_df.show()
+
+#################################################################
+# spark_df = df.select("id","age").filter(col('age')!='NULL')
+spark_df = df.select([count(when(col(i)=='NULL',i)).alias(i) for i in df.columns])
+
+spark_df.show()
