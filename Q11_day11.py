@@ -20,4 +20,11 @@ sampleData1=[(1,"Martinez","U795342iy"),
  (3,"Mane","sh987122e9"),]
 
 df = spark.createDataFrame(sampleData1,schema1)
-df.show()
+# df.show()
+
+################################################
+# SQL approach
+df.createOrReplaceTempView('records')
+query = "SELECT * FROM records WHERE LEN(PhoneNo) = 10 and PhoneNo REGEXP '^[0-9]+$' "
+sql_df = spark.sql(query)
+sql_df.show()
