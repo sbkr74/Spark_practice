@@ -12,6 +12,6 @@ data = [
 ]
 
 df = spark.createDataFrame(data).toDF("EmpId","Name","Locations")
-df1 = df.withColumn("Locations",explode(col("Locations")))
+df1 = df.withColumn("Location",explode(col("Locations"))).drop("Locations")
 df1.show()
 
