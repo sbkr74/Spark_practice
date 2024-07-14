@@ -30,3 +30,20 @@ df2 = df.withColumn('month',date_format('sales_date',"yyyy-MM"))\
 df3 = df.join(df2,(df['month'] == df2['month'])  & (df["sales_amount"] == df2["max(sales_amount)"]),"inner")\
         .drop(df['sales_date'],df['month'],df['sales_amount'],df2['max(sales_amount)'])
 df3.select(col('month'),col('product_id').alias("top_product")).show()
+
+#########################################################################################
+from pyspark.sql import Window
+
+# Create a new column "month" formatted as "yyyy-MM"
+month_df = df.withColumn("month", date_format("sales_date", "yyyy-MM"))
+
+# Define a window specification
+windowSpec = Window.partitionBy("month").orderBy(month_df["sales_amount"].desc())
+
+# Add row number to each row within the partition
+month_df = month_df.withColumn("row_num", row_number().over(windowSpec))
+
+# Filter to keep only the rows with row number 1 (max sales_amount within each month)
+final_df = month_df.filter(month_df["row_num"] == 1).select("month", col("product_id").alias("top_product"))
+
+final_df.show()
