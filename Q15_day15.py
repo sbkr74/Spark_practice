@@ -21,4 +21,12 @@ df = spark.createDataFrame(data).toDF('product_id','sales_date','sales_amount')
 df = df.withColumn("sales_date",to_date(df['sales_date'],'yyyy-MM-dd'))\
     .withColumn("sales_amount",col('sales_amount').cast("float"))\
     .withColumn("month",date_format('sales_date',"yyyy-MM"))
-df.show()
+
+# df1 = df.withColumn('year',year(df['sales_date']))\
+#         .withColumn('month',month(df['sales_date']))
+# df1.show()
+df2 = df.withColumn('month',date_format('sales_date',"yyyy-MM"))\
+        .groupBy('month').agg(max(df.sales_amount))
+df3 = df.join(df2,(df['month'] == df2['month'])  & (df["sales_amount"] == df2["max(sales_amount)"]),"inner")\
+        .drop(df['sales_date'],df['month'],df['sales_amount'],df2['max(sales_amount)'])
+df3.select(col('month'),col('product_id').alias("top_product")).show()
