@@ -47,3 +47,16 @@ month_df = month_df.withColumn("row_num", row_number().over(windowSpec))
 final_df = month_df.filter(month_df["row_num"] == 1).select("month", col("product_id").alias("top_product"))
 
 final_df.show()
+
+#######################################################################################
+# Assuming 'sales_data' is your DataFrame
+window_spec = Window.partitionBy(year("sales_date"),month("sales_date")).orderBy(desc("sales_amount"))
+
+result = df.withColumn("rank",rank().over(window_spec))
+
+top_selling_products = result.filter(col("rank") == 1).select(
+ date_format("sales_date", "yyyy-MM").alias("month"),
+ col("product_id").alias("top_product")
+)
+
+top_selling_products.show()
