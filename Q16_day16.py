@@ -41,7 +41,7 @@ df1.show()
 # Load the source data into a Spark DataFrame
 customer_data = spark.createDataFrame([
  (1, "John Doe", "john.doe@gmail.com", "123-456-7890", "2022-01-15"),
- (2, "Jane Smith", "jane.smith@hotmail.com", "(987)654-3210", "2021-11- 30"),
+ (2, "Jane Smith", "jane.smith@hotmail.com", "(987)654-3210", "2021-11-30"),
  (3, "Alice Lee", "alice.lee@yahoo.com", "555-5555", "2023-03-10"),
  (4, "Bob Brown", "bob.brown@gmail.com", None, "2022-05-20")
 ], ["customer_id", "name", "email", "phone", "registration_date"])
@@ -61,9 +61,12 @@ customer_data = customer_data.withColumnRenamed("name", "full_name")
 # Convert the registration_date column to a proper date format
 customer_data = customer_data.withColumn("registration_date", col("registration_date").cast("date"))
 
-# Create a new column for age based on the registration date
-customer_data = customer_data.withColumn("age", (when(customer_data["registration_date"].isNotNull(), 
- (current_date() - col("registration_date")).cast(IntegerType())).otherwise(None)))
-
+customer_data = customer_data.withColumn(
+    "age",
+    when(
+        customer_data["registration_date"].isNotNull(),
+        year(current_date()) - year(customer_data["registration_date"])
+    ).otherwise(None)
+)
 # Show the transformed data
 customer_data.show()
