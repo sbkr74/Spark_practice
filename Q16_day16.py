@@ -1,5 +1,7 @@
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession,Window
 from pyspark.sql.functions import *
+
+
 spark = SparkSession.builder.appName('Day_16')\
         .config("spark.eventLog.gcMetrics.youngGenerationGarbageCollectors","G1 Young Generation, G1 Concurrent GC")\
         .config("spark.eventLog.gcMetrics.oldGenerationGarbageCollectors","G1 Old Generation, G1 Concurrent GC")\
@@ -25,6 +27,13 @@ df = df.fillna({"phone":"N/A"})
 df = df.withColumnRenamed("name","full_name")
 
 # changing datatype of column
-df1 = df.withColumn("registration_date",to_date(df['registration_date'],"yyyy-MM-dd"))
+df = df.withColumn("registration_date",to_date(df['registration_date'],"yyyy-MM-dd"))
 
-df.show()
+# adding column with condition
+df1 = df.withColumn("year",year("registration_date"))
+
+# df1 = df1.withColumn("age",row_number().over(Window.partitionBy('year').orderBy(df1['year'].desc())))
+# Find the maximum year
+max_year = df1.select(max(col("year"))).collect()[0][0]
+df1 = df1.withColumn('age',max_year-col("year")).drop('year')
+df1.show()
