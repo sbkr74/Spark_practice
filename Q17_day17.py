@@ -13,11 +13,6 @@ orders = spark.read.option("delimiter", "|").csv("data\orders.csv",header=True)
 # order_items = spark.read.option("delimiter","|").csv("data\order_items.csv",header=True,inferSchema=True)
 order_items = spark.read.option("delimiter","|").csv("data\order_items.csv",header=True)
 
-orders.show()
-orders.printSchema()
-order_items.show()
-order_items.printSchema()
-
 # List the original column names
 orders_original_columns = orders.columns
 
@@ -40,8 +35,8 @@ order_items_df = order_items.withColumn("order_id",col("order_id").cast("int"))\
                 .withColumn("product_id",col("product_id").cast("int"))\
                 .withColumn("quantity",col("quantity").cast("int"))
 
-
-orders_df.show()
-orders_df.printSchema()
-order_items_df.show()
-order_items_df.printSchema()
+df = orders.join(order_items,orders["order_id"] == order_items["order_id"],"inner")\
+                .groupBy("product_id","customer_id")\
+                .agg(sum("quantity").alias("Total_quantity"))\
+                .orderBy(desc("Total_quantity"))
+df.show()
