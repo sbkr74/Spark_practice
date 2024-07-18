@@ -16,4 +16,6 @@ data = [
 ]
 
 df = spark.createDataFrame(data)
+
+df = df.filter((col("ID")%2 != 0 ) & (col('description') != 'boring'))
 df.show()
