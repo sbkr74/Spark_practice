@@ -1,8 +1,8 @@
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import col, date_format,to_date,desc,sum
+from pyspark.sql import SparkSession,Window
+from pyspark.sql.functions import col, date_format,to_date,desc,sum as cum_sum
 
 
-spark = SparkSession.builder.appName('Day_17')\
+spark = SparkSession.builder.appName('Day_19')\
         .config("spark.eventLog.gcMetrics.youngGenerationGarbageCollectors","G1 Young Generation, G1 Concurrent GC")\
         .config("spark.eventLog.gcMetrics.oldGenerationGarbageCollectors","G1 Old Generation, G1 Concurrent GC")\
         .getOrCreate()
@@ -18,10 +18,12 @@ schema = ['revenue','date']
 
 df = spark.createDataFrame(data,schema)
 df1 = df.withColumn("month",date_format(to_date(col("date"),'dd-MMM'),'MMM'))
-df1.groupby('month').agg(sum(col('revenue')).alias("total")).orderBy(desc("month")).show()
+df2 = df1.withColumn("cumulative_sum",cum_sum('revenue').over(Window.partitionBy('month').orderBy('date',desc('month')))).drop('date')
+df2.show()
 
-df2 = df.withColumn('month', date_format(to_date(col('date'), 'dd-MMM'), 'MMM'))
-df2.createOrReplaceTempView('temp')
+##############################################################
+# SparkSQL approach
+df1.createOrReplaceTempView('temp')
 qry = '''select revenue,month,sum(revenue) 
 OVER(PARTITION BY Month ORDER BY Revenue) as cumulative_sum
 from temp 
