@@ -20,3 +20,11 @@ df = spark.createDataFrame(data,schema)
 df1 = df.withColumn("month",date_format(to_date(col("date"),'dd-MMM'),'MMM'))
 df1.groupby('month').agg(sum(col('revenue')).alias("total_revenue")).show()
 
+df2 = df.withColumn('month', date_format(to_date(col('date'), 'dd-MMM'), 'MMM'))
+df2.createOrReplaceTempView('temp')
+qry = '''select revenue,month,sum(revenue) 
+OVER(PARTITION BY Month ORDER BY Revenue) as cumulative_sum
+from temp 
+'''
+
+result = spark.sql(qry).show()
