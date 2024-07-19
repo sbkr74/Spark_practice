@@ -22,6 +22,18 @@ df2 = df1.withColumn("cumulative_sum",cum_sum('revenue').over(Window.partitionBy
 df2.show()
 
 ##############################################################
+# Create window specification for cumulative sum
+window_spec = Window.partitionBy('month').orderBy('date').rowsBetween(Window.unboundedPreceding, Window.currentRow)
+
+# Calculate cumulative sum
+another_df = df1.withColumn('cumulative_sum', cum_sum('revenue').over(window_spec))
+# Select required columns and order the result
+result_df = another_df.select('revenue', 'month', 'cumulative_sum').orderBy('month','revenue')
+
+# Show result
+result_df.show()
+
+##############################################################
 # SparkSQL approach
 df1.createOrReplaceTempView('temp')
 qry = '''select revenue,month,sum(revenue) 
