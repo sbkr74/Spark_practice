@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import *
+from pyspark.sql.functions import col, date_format,to_date,desc,sum
 
 
 spark = SparkSession.builder.appName('Day_17')\
@@ -18,7 +18,7 @@ schema = ['revenue','date']
 
 df = spark.createDataFrame(data,schema)
 df1 = df.withColumn("month",date_format(to_date(col("date"),'dd-MMM'),'MMM'))
-df1.groupby('month').agg(sum(col('revenue')).alias("total_revenue")).show()
+df1.groupby('month').agg(sum(col('revenue')).alias("total")).orderBy(desc("month")).show()
 
 df2 = df.withColumn('month', date_format(to_date(col('date'), 'dd-MMM'), 'MMM'))
 df2.createOrReplaceTempView('temp')
