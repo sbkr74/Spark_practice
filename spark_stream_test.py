@@ -51,9 +51,9 @@ spark = SparkSession.builder \
     .config("spark.hadoop.io.native.lib.available", "false") \
     .getOrCreate()
 
-input_path = r"D:\Learning\Spark_practice\data\test\sample1.json"
+input_path = r"D:\Learning\Spark_practice\data\test2"
 checkpoint_path = r"D:\Learning\Spark_practice\checkpoint"
-
+spark.conf.set("spark.sql.streaming.schemaInference",True)
 # Define the schema for the JSON files
 schema = StructType([
     StructField("fruit", StringType(), True),
@@ -66,6 +66,8 @@ schema = StructType([
 df = spark.readStream \
     .schema(schema) \
     .format("json") \
+    .option("cleanSource","archive")\
+    .option("sourceArchiveDir","archive_dir")\
     .option("maxFilesPerTrigger", 1) \
     .load(input_path)
 
