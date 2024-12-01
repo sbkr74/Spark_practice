@@ -19,15 +19,20 @@ data = [
 column = ["EmpId","EmpName","Salary","DeptName"]
 
 df = spark.createDataFrame(data,column)
-df.show()
-########################################
+##############################################################
 # used groupBy as I am used to using groupBy in this type condition
 df1 = df.groupBy(df.DeptName).agg((F.max(df.Salary)).alias("Salary"))
 # but result want to be as it that's why joined to original table, although it is resource consuming task
 df2 = df.join(df1,(df1.Salary == df.Salary) & (df1.DeptName == df.DeptName),"inner").drop(df1.Salary,df1.DeptName)
-df2.show()
 
 # optimized my previous mistake for resource management
 df_rank = df.withColumn("rank",F.rank().over(Window.partitionBy(df.DeptName).orderBy(F.desc(df.Salary))))
 df_max_sal = df_rank.filter(df_rank.rank == 1).drop(df_rank.rank)
 df_max_sal.orderBy(df_max_sal.EmpId).show()
+max_part = df_max_sal.rdd.getNumPartitions()
+df1_part = df1.rdd.getNumPartitions()
+df2_part = df2.rdd.getNumPartitions()
+print("MAX:",max_part)
+print("DF1:",df1_part)
+print("DF2:",df2_part)
+print()
