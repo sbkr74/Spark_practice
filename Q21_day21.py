@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col,lag,when,lead
+from pyspark.sql.functions import col,lag,when,lead,count,max
 from pyspark.sql.window import Window
 
 spark = SparkSession.builder.appName("Day 21").getOrCreate()
@@ -25,7 +25,11 @@ df1 = df.withColumn("prev_destination",lag(col("destination")).over(windowspec))
 df2 = df1.withColumn("partition",when(col("origin") == col("prev_destination"),1).otherwise(0))
 
 df3 = df2.withColumn("new_origin",when(col("partition")==0,col("origin")).otherwise(lead(col("partition"),1,0).over(windowspec)))
-df3.show()
+# df3.show()
 
 df4 = df3.withColumn("new_destination",when(col("new_origin")==0,col("destination")).otherwise(col("new_origin")))
-df4.show()
+
+df5 = df4.withColumn("final_origin",when(col("origin")==col("new_destination"),col("origin")))
+df5 = df5.withColumn("final_dest",when(col("destination")==col("new_destination"),col("destination")))
+df5.show()
+
