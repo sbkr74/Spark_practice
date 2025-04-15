@@ -319,3 +319,156 @@ result_df.show()
 |      4|   Ranchi|    Mumbai|
 +-------+---------+----------+
 ```
+---
+# Understanding `spark_sum()` and Alternative Approaches
+
+## Why We Use `spark_sum()`
+
+In our solution, `spark_sum()` serves a critical purpose in creating journey IDs. Here's why:
+
+1. **Purpose**: We use it as a running sum to create unique identifiers for each continuous journey within a customer's flights.
+
+2. **How it works**:
+   - We first mark "new journey" points with `1` (when origin ≠ previous destination)
+   - All other flights get `0` (continuations of current journey)
+   - The running sum of these markers creates incrementing IDs for each journey segment
+
+3. **Example for Customer 4**:
+   ```
+   Flight1: new_journey=1 → sum=1 (journey_id=1)
+   Flight2: new_journey=0 → sum=1 (journey_id=1)
+   Flight3: new_journey=1 → sum=2 (journey_id=2)
+   Flight4: new_journey=0 → sum=2 (journey_id=2)
+   ```
+
+4. **Why not regular sum?**:
+   - `spark_sum()` (aliased from `pyspark.sql.functions.sum`) is the window aggregate function
+   - Regular Python `sum()` wouldn't work in this distributed computation context
+
+## Alternative Approaches
+
+Here are 3 other ways to achieve the same result:
+
+### Alternative 1: Using Row Number with Conditional Logic
+
+```python
+from pyspark.sql.functions import row_number, lit
+
+window_spec = Window.partitionBy("cust_id").orderBy("flight_id")
+journey_df = (sorted_df
+    .withColumn("prev_dest", lag("destination").over(window_spec))
+    .withColumn("journey_start", 
+                when((col("prev_dest").isNull()) | 
+                     (col("origin") != col("prev_dest")), 
+                     lit(1)).otherwise(lit(0)))
+    .withColumn("journey_id", 
+                row_number().over(Window.partitionBy("cust_id")
+                            .orderBy("flight_id")) - 
+                row_number().over(Window.partitionBy("cust_id", "journey_start")
+                            .orderBy("flight_id")) + 1)
+)
+```
+
+**Pros**: Doesn't require running sum
+**Cons**: More complex logic
+
+### Alternative 2: Using Custom Aggregation with Collect List
+
+```python
+from pyspark.sql.functions import collect_list, struct
+
+# Group all flights per customer and process in UDF
+grouped = df.groupBy("cust_id").agg(
+    collect_list(struct("flight_id", "origin", "destination")).alias("flights")
+)
+
+# Define UDF to process the journeys
+def create_itineraries(flights):
+    flights_sorted = sorted(flights, key=lambda x: x.flight_id)
+    journeys = []
+    current_journey = None
+    
+    for flight in flights_sorted:
+        if current_journey is None or flight.origin != current_journey[-1].destination:
+            if current_journey is not None:
+                journeys.append((current_journey[0].origin, current_journey[-1].destination))
+            current_journey = [flight]
+        else:
+            current_journey.append(flight)
+    
+    if current_journey:
+        journeys.append((current_journey[0].origin, current_journey[-1].destination))
+    
+    return journeys
+
+from pyspark.sql.functions import udf
+from pyspark.sql.types import ArrayType, StructType, StructField, StringType
+
+itinerary_type = ArrayType(StructType([
+    StructField("origin", StringType()),
+    StructField("destination", StringType())
+]))
+
+create_itineraries_udf = udf(create_itineraries, itinerary_type)
+
+result = (grouped
+    .withColumn("itineraries", create_itineraries_udf("flights"))
+    .select("cust_id", explode("itineraries").alias("itinerary"))
+    .select("cust_id", "itinerary.*")
+)
+```
+
+**Pros**: More control in Python logic
+**Cons**: Less efficient for large datasets (UDFs have serialization overhead)
+
+### Alternative 3: Using Spark SQL with LAG and SUM
+
+```python
+# Register DataFrame as temp view
+sorted_df.createOrReplaceTempView("flights")
+
+# Execute SQL query
+result_df = spark.sql("""
+WITH journey_markers AS (
+  SELECT 
+    cust_id,
+    flight_id,
+    origin,
+    destination,
+    CASE 
+      WHEN LAG(destination) OVER (PARTITION BY cust_id ORDER BY flight_id) IS NULL 
+        OR origin != LAG(destination) OVER (PARTITION BY cust_id ORDER BY flight_id)
+      THEN 1
+      ELSE 0
+    END AS new_journey
+  FROM flights
+),
+journey_ids AS (
+  SELECT
+    cust_id,
+    flight_id,
+    origin,
+    destination,
+    SUM(new_journey) OVER (PARTITION BY cust_id ORDER BY flight_id) AS journey_id
+  FROM journey_markers
+)
+SELECT
+  cust_id,
+  FIRST(origin) AS origin,
+  LAST(destination) AS destination
+FROM journey_ids
+GROUP BY cust_id, journey_id
+ORDER BY cust_id
+""")
+```
+
+**Pros**: More readable for SQL-savvy users
+**Cons**: Requires SQL knowledge
+
+## Recommendation
+
+The original `spark_sum()` approach is generally the best because:
+1. It's purely DataFrame-based (no UDFs)
+2. More efficient than the row_number alternative
+3. Clearer than the SQL version for PySpark users
+
