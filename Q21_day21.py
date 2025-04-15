@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col,lag,when,lead,count,coalesce
+from pyspark.sql.functions import col,lag,when,lead,count,coalesce,collect_list
 from pyspark.sql.window import Window
 
 spark = SparkSession.builder.appName("Day 21").getOrCreate()
@@ -36,3 +36,7 @@ df7 = df6.select("cust_id",coalesce(df6["final_origin"],df6["final_dest"]).alias
 df7 = df7.filter(col("final")!="NULL")
 df7.show()
 
+result = df7.groupBy("cust_id").agg(collect_list("final").alias("locations"))
+result.show()
+
+result.select("cust_id",col("locations")[0].alias("origin"),col("locations")[1].alias("destination")).show()
