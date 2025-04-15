@@ -1,5 +1,5 @@
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import col,lag,when,lead,count,coalesce,collect_list,row_number,first
+from pyspark.sql.functions import col,lag,when,lead,coalesce,row_number,ceil,max
 from pyspark.sql.window import Window
 
 spark = SparkSession.builder.appName("Day 21").getOrCreate()
@@ -36,26 +36,19 @@ df7 = df6.select("cust_id",coalesce(df6["final_origin"],df6["final_dest"]).alias
 df7 = df7.filter(col("final")!="NULL")
 df7.show()
 
-# result = df7.groupBy("cust_id").agg(collect_list("final").alias("locations"))
-# result.show()
+# Add row number within each customer group
+df_with_rownum = df7.withColumn("row_num",row_number().over(Window.partitionBy("cust_id").orderBy("final")))
 
-# result.select("cust_id",col("locations")[0].alias("origin"),col("locations")[1].alias("destination")).show()
+# Create pair identifier (grouping every 2 locations)
+df_with_pairs = df_with_rownum.withColumn("pair_num",ceil(col("row_num") / 2))
 
-
-# Add row number for each customer's locations
-df_with_rownum = df7.withColumn(
-    "row_num",
-    row_number().over(Window.partitionBy("cust_id").orderBy("final"))
-)
-
-# Pivot the data
-result = df_with_rownum.groupBy("cust_id") \
-                      .pivot("row_num") \
-                      .agg(first("final")) \
-                      .orderBy("cust_id")
-
-# Rename columns
-for col_name in result.columns[1:]:
-    result = result.withColumnRenamed(col_name, f"location_{col_name}")
+# Pivot to get location1 and location2 for each pair
+result = df_with_pairs.groupBy("cust_id", "pair_num") \
+                     .agg(
+                         max(when(col("row_num") % 2 == 1, col("final"))).alias("location1"),
+                         max(when(col("row_num") % 2 == 0, col("final"))).alias("location2")
+                     ) \
+                     .orderBy("cust_id", "pair_num") \
+                     .drop("pair_num")
 
 result.show(truncate=False)
