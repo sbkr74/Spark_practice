@@ -18,12 +18,12 @@ data = [
 
 df = spark.createDataFrame(data).toDF("person","type","age")
 
-# Giving row_number to pair smallest(oldest) with largest(youngest)
-df = df.withColumn("rnk",row_number().over(Window.partitionBy(col("type")).orderBy(desc("age"))))
-df.show()
-
 # Adult Dataframe
-df_adult = df.filter(col("type") == "ADULT")
+df_adult = df.filter(col("type") == "ADULT").withColumn("rnk",row_number().over(Window.partitionBy(col("type")).orderBy(desc("age"))))
 
 # Child Dataframe
-df_child = df.filter(col("type") == "CHILD")
+df_child = df.filter(col("type") == "CHILD").withColumn("rnk",row_number().over(Window.partitionBy(col("type")).orderBy(col("age"))))
+
+# joined using full so nothing will miss out from both side
+result_df = df_adult.alias("A").join(df_child.alias("C"),on=(df_adult.rnk==df_child.rnk),how="full").select(col('A.person').alias("ADULT"),col('C.person').alias("CHILD"))
+result_df.show()
