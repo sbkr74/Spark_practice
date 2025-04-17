@@ -25,10 +25,10 @@ class AdultChildPair:
 
  def get_pair(self, input_df):
     adult_df = input_df.filter(col('type').__eq__('ADULT')) \
-    .withColumn('rnk', row_number().over(Window.orderBy(desc('age')).orderBy(desc('person'))))
+    .withColumn('rnk', row_number().over(Window.partitionBy(col("type")).orderBy(desc('age'))))
 
     child_df = input_df.filter(col('type').__eq__('CHILD'))\
-    .withColumn('rnk', row_number().over(Window.orderBy('age').orderBy('person')))
+    .withColumn('rnk', row_number().over(Window.partitionBy(col("type")).orderBy('age')))
 
     result_df = adult_df.alias('A').join(child_df.alias('C'), on='rnk', how='full')\
     .select(col('A.person'),
